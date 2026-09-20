@@ -1,18 +1,19 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
-import {usePosts} from '../contexts/PostsContext'
+import { AuthContext } from "./AuthProvider";
 
 export default function NewPostModal({ show, handleClose }) {
   const [postContent, setPostContent] = useState("");
+  const { currentUser, savePost } = useContext(AuthContext);
+  const userId = currentUser?.uid;
 
-const {savePost} = usePosts();
-
-const handleSave = async ()=> {
-  await savePost(postContent);
-
-  handleClose();
-  setPostContent('')
-}
+  const handleSave = () => {
+    if (userId) {
+      savePost(userId, postContent);
+      handleClose();
+      setPostContent('');
+    }
+  };
 
   return (
     <>
