@@ -1,23 +1,51 @@
-import { useContext } from "react";
-import { Button, Col, Image, Row } from "react-bootstrap";
+import { useContext, useState } from "react";
+import { Button, Col, Image, Form, Row } from "react-bootstrap";
+import { useDispatch } from 'react-redux';
+import {
+  likePost,
+  removeLikeFromPost,
+  addCommentThunk,
+} from '../features/posts/postsSlice';
 import { AuthContext } from "./AuthProvider";
 
 export default function ProfilePostCard({ post }) {
-  const { content, id: postId, likes = [] } = post;
-  const { currentUser, likePost, removeLikeFromPost } = useContext(AuthContext);
+  const { content, id: postId, comments = [] } = post;
+  const [likes, setLikes] = useState(post.likes || []);
+  const [commentText, setCommentText] = useState('');
+  const dispatch = useDispatch();
+  const { currentUser } = useContext(AuthContext);
   const userId = currentUser?.uid;
 
   const isLiked = likes.includes(userId);
 
   const pic = "https://pbs.twimg.com/profile_images/1587405892437221376/h167Jlb2_400x400.jpg";
 
-  const handleLike = () => {
-    if (!userId) return;
-    if (isLiked) {
-      removeLikeFromPost(userId, postId);
-    } else {
-      likePost(userId, postId);
+  const handleLike = () => (isLiked ? removeFromLikes() : addToLikes());
+
+  const addToLikes = () => {
+    setLikes([...likes, userId]);
+    dispatch(likePost({ userId, postId }));
+  };
+
+  const removeFromLikes = () => {
+    setLikes(likes.filter((id) => id !== userId));
+    dispatch(removeLikeFromPost({ userId, postId }));
+  };
+
+  const handleAddComment = (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) {
+      return;
     }
+    dispatch(
+      addCommentThunk({
+        userId,
+        postId,
+        authorId: userId,
+        content: commentText,
+      })
+    );
+    setCommentText("");
   };
 
   return (
@@ -57,6 +85,28 @@ export default function ProfilePostCard({ post }) {
           <Button variant="light">
             <i className="bi bi-upload"></i>
           </Button>
+        </div>
+
+        {/* Comment form */}
+        <Form onSubmit={handleAddComment} className="mt-2">
+          <Form.Control
+            type="text"
+            placeholder="Write a comment..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+          />
+          <Button type="submit" variant="primary" size="sm" className="mt-1">
+            Comment
+          </Button>
+        </Form>
+
+        {/* Render comments */}
+        <div className="mt-3">
+          {comments.map((c) => (
+            <p key={c.id}>
+              <strong>{c.authorId}:</strong> {c.content}
+            </p>
+          ))}
         </div>
       </Col>
     </Row>
