@@ -4,16 +4,22 @@ import { AuthContext } from "./AuthProvider";
 
 export default function NewPostModal({ show, handleClose }) {
   const [postContent, setPostContent] = useState("");
+  const [file, setFile] = useState(null);
   const { currentUser, savePost } = useContext(AuthContext);
   const userId = currentUser?.uid;
 
   const handleSave = () => {
     if (userId) {
-      savePost(userId, postContent);
+      savePost(userId, postContent, file);
       handleClose();
       setPostContent('');
+      setFile(null);
     }
   };
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  }
 
   return (
     <>
@@ -26,8 +32,11 @@ export default function NewPostModal({ show, handleClose }) {
                 placeholder="What is happening?!"
                 as="textarea"
                 rows={3}
+                value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
               />
+              <br />
+              <Form.Control type="file" onChange={handleFileChange} />
             </Form.Group>
           </Form>
         </Modal.Body>

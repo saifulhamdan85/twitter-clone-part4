@@ -7,20 +7,37 @@ import {
   addCommentThunk,
 } from '../features/posts/postsSlice';
 import { AuthContext } from "./AuthProvider";
+import UpdatePostModal from "./UpdatePostModal";
 
 export default function ProfilePostCard({ post }) {
-  const { content, id: postId, comments = [] } = post;
-  const [likes, setLikes] = useState(post.likes || []);
+  const { content, id: postId, postLikes = [], comments = [], imageUrl } = post;
+  const [likes, setLikes] = useState(postLikes || []);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [commentText, setCommentText] = useState('');
+
   const dispatch = useDispatch();
-  const { currentUser } = useContext(AuthContext);
+
+  const { currentUser, likePost, removeLikeFromPost, deletePost } = useContext(AuthContext);
+
   const userId = currentUser?.uid;
 
   const isLiked = likes.includes(userId);
 
   const pic = "https://pbs.twimg.com/profile_images/1587405892437221376/h167Jlb2_400x400.jpg";
 
-  const handleLike = () => (isLiked ? removeFromLikes() : addToLikes());
+  const handleShowUpdateModal = () => setShowUpdateModal(true);
+  const handleCloseUpdateModal = () => setShowUpdateModal(false);
+
+  const handleLike = () => {
+    if (!userId) return;
+    if (isLiked) {
+      setLikes(likes.filter((id) => id !== userId));
+      removeLikeFromPost(userId, postId);
+    } else {
+      setLikes([...likes, userId]);
+      likePost(userId, postId);
+    }
+  };
 
   const addToLikes = () => {
     setLikes([...likes, userId]);
@@ -48,6 +65,11 @@ export default function ProfilePostCard({ post }) {
     setCommentText("");
   };
 
+  const handleDelete = () => {
+    if (!userId) return;
+    deletePost(userId, postId);
+  };
+
   return (
     <Row
       className="p-3"
@@ -64,6 +86,7 @@ export default function ProfilePostCard({ post }) {
         <strong>Haris</strong>
         <span> @haris.samingan · Apr 16</span>
         <p>{content}</p>
+        {imageUrl && <Image src={imageUrl} style={{ width: 150 }} />}
         <div className="d-flex justify-content-between">
           <Button variant="light">
             <i className="bi bi-chat"></i>
@@ -82,10 +105,20 @@ export default function ProfilePostCard({ post }) {
           <Button variant="light">
             <i className="bi bi-graph-up"></i>
           </Button>
-          <Button variant="light">
-            <i className="bi bi-upload"></i>
+          <Button variant="light" onClick={handleShowUpdateModal}>
+            <i className="bi bi-pencil-square"></i>
+          </Button>
+          <Button variant="light" onClick={handleDelete}>
+            <i className="bi bi-trash"></i>
           </Button>
         </div>
+
+        <UpdatePostModal
+          show={showUpdateModal}
+          handleClose={handleCloseUpdateModal}
+          postId={postId}
+          originalPostContent={content}
+        />
 
         {/* Comment form */}
         <Form onSubmit={handleAddComment} className="mt-2">
