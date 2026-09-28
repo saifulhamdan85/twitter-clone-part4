@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { Button, Col, Image, Form, Row } from "react-bootstrap";
+import { Button, Col, Image, Form, Row, Modal } from "react-bootstrap";
 import { useDispatch } from 'react-redux';
 import {
   likePost,
@@ -14,10 +14,11 @@ export default function ProfilePostCard({ post }) {
   const [likes, setLikes] = useState(postLikes || []);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const dispatch = useDispatch();
 
-  const { currentUser, likePost, removeLikeFromPost, deletePost } = useContext(AuthContext);
+  const { currentUser, deletePost } = useContext(AuthContext);
 
   const userId = currentUser?.uid;
 
@@ -28,32 +29,21 @@ export default function ProfilePostCard({ post }) {
   const handleShowUpdateModal = () => setShowUpdateModal(true);
   const handleCloseUpdateModal = () => setShowUpdateModal(false);
 
+
   const handleLike = () => {
     if (!userId) return;
     if (isLiked) {
       setLikes(likes.filter((id) => id !== userId));
-      removeLikeFromPost(userId, postId);
+      dispatch(removeLikeFromPost({ userId, postId }));
     } else {
       setLikes([...likes, userId]);
-      likePost(userId, postId);
+      dispatch(likePost({ userId, postId }));
     }
-  };
-
-  const addToLikes = () => {
-    setLikes([...likes, userId]);
-    dispatch(likePost({ userId, postId }));
-  };
-
-  const removeFromLikes = () => {
-    setLikes(likes.filter((id) => id !== userId));
-    dispatch(removeLikeFromPost({ userId, postId }));
   };
 
   const handleAddComment = (e) => {
     e.preventDefault();
-    if (!commentText.trim()) {
-      return;
-    }
+    if (!commentText.trim()) return;
     dispatch(
       addCommentThunk({
         userId,
@@ -65,9 +55,10 @@ export default function ProfilePostCard({ post }) {
     setCommentText("");
   };
 
-  const handleDelete = () => {
+  const handleConfirmDelete = () => {
     if (!userId) return;
     deletePost(userId, postId);
+    setShowDeleteModal(false);
   };
 
   return (
@@ -108,7 +99,7 @@ export default function ProfilePostCard({ post }) {
           <Button variant="light" onClick={handleShowUpdateModal}>
             <i className="bi bi-pencil-square"></i>
           </Button>
-          <Button variant="light" onClick={handleDelete}>
+          <Button variant="light" onClick={() => setShowDeleteModal(true)}>
             <i className="bi bi-trash"></i>
           </Button>
         </div>
@@ -133,9 +124,27 @@ export default function ProfilePostCard({ post }) {
           </Button>
         </Form>
 
+        {/* Delete Confirmation Modal */}
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Delete Tweet</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to delete this tweet?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
         {/* Render comments */}
         <div className="mt-3">
-          {comments.map((c) => (
+          {comments?.map((c) => (
             <p key={c.id}>
               <strong>{c.authorId}:</strong> {c.content}
             </p>
